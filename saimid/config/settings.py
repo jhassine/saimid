@@ -30,7 +30,7 @@ SECRET_KEY: str | None = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1", "saimid"]
+ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1", "saimid", "saimid.onrender.com"]
 
 
 # Application definition
