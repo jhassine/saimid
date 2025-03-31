@@ -28,7 +28,7 @@ _: bool = load_dotenv(verbose=True)
 SECRET_KEY: str | None = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG: bool = os.getenv("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1", "saimid", "saimid.onrender.com"]
 
