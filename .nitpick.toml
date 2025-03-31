@@ -1,0 +1,18 @@
+[tool.nitpick]
+style = [
+    "github://NextGenContributions/.nitpick@main/nitpick_styles/django-flake8.toml",
+    "github://NextGenContributions/.nitpick@main/nitpick_styles/django-mypy.toml",
+    "github://NextGenContributions/.nitpick@main/nitpick_styles/django-ruff.toml",
+    "github://NextGenContributions/.nitpick@main/nitpick_styles/django-pyproject.toml",
+    "github://NextGenContributions/.nitpick@main/nitpick_styles/generic-mypy.toml",
+    "github://NextGenContributions/.nitpick@main/nitpick_styles/generic-flake8.toml",
+    "github://NextGenContributions/.nitpick@main/nitpick_styles/generic-pre-commit-hooks.toml",
+    "github://NextGenContributions/.nitpick@main/nitpick_styles/generic-pylintrc.toml",
+    "github://NextGenContributions/.nitpick@main/nitpick_styles/generic-pyproject.toml",
+    "github://NextGenContributions/.nitpick@main/nitpick_styles/generic-basedpyright.toml",
+    "github://NextGenContributions/.nitpick@main/nitpick_styles/generic-pyre.toml",
+    "github://NextGenContributions/.nitpick@main/nitpick_styles/generic-ruff.toml",
+    "github://NextGenContributions/.nitpick@main/nitpick_styles/generic-taplo.toml",
+]
+# We don't really care about caching as it should be rather quick to fetch anyway, this ensures fresh configs
+cache = "never"

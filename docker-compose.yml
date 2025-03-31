@@ -1,0 +1,48 @@
+services:
+
+  saimid:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    hostname: saimid
+    # Overrides default command so things don't shut down after the process ends.
+    command: sleep infinity
+    volumes:
+      - .:/workspace:cached
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    ports:
+      - "3000:8080"
+    links:
+      - saimid
+    volumes:
+      - open-webui:/app/backend/data
+    env_file:
+      - .env.openwebui
+    environment:
+      WEBUI_SECRET_KEY: your_secret_key
+      SAFE_MODE: True
+      ENABLE_OLLAMA_API: False
+      OPENAI_API_BASE_URL: http://saimid:8000/api
+      WEBUI_SESSION_COOKIE_SAME_SITE: strict
+      WEBUI_SESSION_COOKIE_SECURE: False
+      WEBUI_AUTH_COOKIE_SAME_SITE: strict
+      WEBUI_AUTH_COOKIE_SECURE: True
+      RESET_CONFIG_ON_START: True
+      ENABLE_SIGNUP: True
+      ENABLE_OAUTH_SIGNUP: True
+      ENABLE_LOGIN_FORM: True
+      RAG_WEB_SEARCH_ENGINE: bing
+      WEBUI_URL: http://localhost:3000
+      OAUTH_MERGE_ACCOUNTS_BY_EMAIL: True
+      ENABLE_IMAGE_GENERATION: True
+      ENABLE_EVALUATION_ARENA_MODELS: False
+      PDF_EXTRACT_IMAGES: True
+      DEFAULT_USER_ROLE: admin
+      ENABLE_API_KEY_ENDPOINT_RESTRICTIONS: True
+
+volumes:
+  open-webui:

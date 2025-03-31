@@ -1,0 +1,45 @@
+exclude = [ ".bzr", ".direnv", ".eggs", ".git", ".git-rewrite", ".hg", ".ipynb_checkpoints", ".mypy_cache", ".nox", ".pants.d", ".pyenv", ".pytest_cache", ".pytype", ".ruff_cache", ".svn", ".tox", ".venv", ".vscode", "__pypackages__", "_build", "buck-out", "build", "dist", "node_modules", "site-packages", "venv", "out", "typings", ".pyre",]
+line-length = 88
+indent-width = 4
+
+[lint]
+select = [ "ALL",]
+external = [ "WPS", "C", "W",]
+ignore = [ "RUF100", "COM812", "ISC001", "FIX002",]
+fixable = [ "ALL",]
+unfixable = []
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[lint.per-file-ignores]
+"**/migrations/*.py" = [ "ALL",]
+"src/**/__init__.py" = [ "D100", "D104",]
+"src/**/tasks.py" = [ "D100",]
+"src/**/admin.py" = [ "D100", "D101", "D102", "D103", "D105", "D106",]
+"src/**/apps.py" = [ "D100", "D101", "D102", "D103", "D105", "D106",]
+"src/**/models.py" = [ "D100", "D101", "D102", "D103", "D105", "D106",]
+"src/**/serializers.py" = [ "D100", "D101", "D102", "D103", "D105", "D106",]
+"src/**/urls.py" = [ "D100", "D101", "D102", "D103", "D105", "D106",]
+"src/**/views.py" = [ "D100", "D101", "D102", "D103", "D105", "D106",]
+"src/**/forms.py" = [ "D100", "D101", "D102", "D103", "D105", "D106",]
+"src/**/mutations.py" = [ "D100", "D101", "D102", "D103", "D105", "D106",]
+"src/**/schema.py" = [ "D100", "D101", "D102", "D103", "D105", "D106",]
+"src/**/managers.py" = [ "D100", "D101",]
+"src/**/filters.py" = [ "D100", "D101",]
+"tests/**/test_*.py" = [ "S101",]
+
+[lint.pyflakes]
+extend-generics = [ "django.db.models.ForeignKey",]
+
+[lint.pydocstyle]
+convention = "google"
+
+[lint.pycodestyle]
+ignore-overlong-task-comments = true
