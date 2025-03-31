@@ -48,6 +48,7 @@ def get_models(request: HttpRequest) -> Response:  # noqa: ARG001
     """Get available models."""
     # Check if the request authorization header equals the API_KEY
     if request.headers.get("Authorization") != f"Bearer {os.getenv('SAIMI_API_KEY')}":
+        print(request.headers.get("Authorization"))
         return Response({"detail": "Unauthorized"}, status=401)
 
     headers = {
@@ -192,7 +193,7 @@ def pseudonymization_wrapper(
 
     # Step 3: Re-identify the response
 
-    pdata = use_model(data, DEID_MODEL)
+    data = use_model(data, DEID_MODEL)
 
     if "messages" in data:
         data["messages"] = [
@@ -213,6 +214,8 @@ async def openai_proxy(request: HttpRequest) -> StreamingHttpResponse | Response
     """Proxy requests to OpenAI API."""
     # Check if the request authorization header equals the API_KEY
     if request.headers.get("Authorization") != f"Bearer {os.getenv('SAIMI_API_KEY')}":
+        # Print hash
+        print(request.headers.get("Authorization"))
         return Response({"detail": "Unauthorized"}, status=401)
 
     # Prepare headers
