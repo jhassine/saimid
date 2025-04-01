@@ -14,9 +14,12 @@ from ninja.responses import Response
 from openai import OpenAI
 
 from saimid.config.prompts import (
+    DEID_HEADER,
     DEID_INSTRUCTIONS,
+    QUOTE,
     REDACTION_SUMMARY,
-    REID_INSTRUCTIONS,
+    USER_RESPONSE_PROMPT,
+    reid_instructions,
 )
 
 TIMEOUT = 60
@@ -36,7 +39,11 @@ real_client = OpenAI(
     timeout=TIMEOUT,
 )
 
+"""Model used for de-identification."""
 DEID_MODEL = "models/gemini-2.0-flash-lite"
+
+"""Model used for chat topic summarization."""
+SUMMARY_MODEL = "models/gemma-3-27b-it"
 
 
 api = NinjaAPI()
@@ -142,15 +149,21 @@ def pseudonymization_wrapper(
 
     # Step 1: De-id the content
     if "messages" in data:
-        data["messages"].append(
+        data["messages"] = [
             {
                 "role": "system",
                 "content": DEID_INSTRUCTIONS,
-            }
-        )
+            },
+            {
+                "role": "user",
+                "content": original_data["messages"][-1]["content"],
+            },
+        ]
     data = use_model(data, DEID_MODEL)
 
-    completion = pseudonymizer_client.chat.completions.create(**data, stream=True)
+    completion = pseudonymizer_client.chat.completions.create(
+        **data, stream=True, temperature=0
+    )
 
     deid_content_with_summary = ""
 
@@ -158,23 +171,37 @@ def pseudonymization_wrapper(
         if chunk and chunk.choices[0].delta.content is not None:
             deid_content_with_summary += chunk.choices[0].delta.content
             yield get_chunk(
-                chunk.choices[0].delta.content or "", "pseudonymizer", DEID_MODEL
+                chunk.choices[0].delta.content or "",
+                "de-id-assistant",
+                f"{DEID_MODEL}-deid",
             )
 
     # Step 2: Get response for deid content
 
     if REDACTION_SUMMARY in deid_content_with_summary:
-        deid_content = deid_content_with_summary.split(REDACTION_SUMMARY, 1)[0].strip()
-        deid_summary = deid_content_with_summary.split(REDACTION_SUMMARY, 1)[1].strip()
+        deid_content = deid_content_with_summary.split(REDACTION_SUMMARY, 1)[0]
+
+        # remove DEID_HEADER from the deid_content
+        deid_content = deid_content.replace(DEID_HEADER, "").strip()
+
+        # remove QUOTE from each line
+        deid_content = "\n".join(
+            line.replace(QUOTE, "") for line in deid_content.splitlines()
+        )
+
+        tokens = deid_content_with_summary.split(REDACTION_SUMMARY, 1)[1].strip()
     else:
         deid_content = deid_content_with_summary.strip()
-        deid_summary = ""
+        tokens = ""
+
+    print("deid content:", deid_content)
+    print("tokens:", tokens)
 
     if "messages" in data:
         data["messages"] = [
             {
                 "role": "system",
-                "content": "When you see the word 'REDACTED', it means that the content has been redacted. You can refer the redacted details in your response by using the same word 'REDACTED'.",
+                "content": USER_RESPONSE_PROMPT,
             },
             {"role": "user", "content": deid_content},
         ]
@@ -184,12 +211,14 @@ def pseudonymization_wrapper(
     completion = real_client.chat.completions.create(**data, stream=True)
     response = ""
 
-    yield get_chunk("# PSEUDONYMIZED RESPONSE\n\n", "assistant", user_selected_model)
+    yield get_chunk("# PSEUDONYMIZED RESPONSE\n\n", "header", user_selected_model)
 
     for chunk in completion:
         if chunk and (resp := chunk.choices[0].delta.content) is not None:
             response += resp
             yield get_chunk(resp or "", "assistant", user_selected_model)
+
+    print("response:", response)
 
     # Step 3: Re-identify the response
 
@@ -197,16 +226,22 @@ def pseudonymization_wrapper(
 
     if "messages" in data:
         data["messages"] = [
-            {"role": "system", "content": f"{REID_INSTRUCTIONS}{deid_summary}"},
+            {"role": "system", "content": f"{reid_instructions(tokens)}"},
             {"role": "user", "content": response},
         ]
 
-    yield get_chunk("\n\n---\n\n# RE-IDENTIFIED RESPONSE\n\n", "assistant", DEID_MODEL)
+    yield get_chunk(
+        "\n\n---\n\n# RE-IDENTIFIED RESPONSE\n\n",
+        "reid-assistant",
+        f"{DEID_MODEL}-reid",
+    )
 
-    completion = pseudonymizer_client.chat.completions.create(**data, stream=True)
+    completion = pseudonymizer_client.chat.completions.create(
+        **data, stream=True, temperature=0
+    )
     for chunk in completion:
         if chunk and (resp := chunk.choices[0].delta.content) is not None:
-            yield get_chunk(resp or "", "assistant", DEID_MODEL)
+            yield get_chunk(resp or "", "reid-assistant", f"{DEID_MODEL}-reid")
 
 
 @api.post("chat/completions")
@@ -228,6 +263,16 @@ async def openai_proxy(request: HttpRequest) -> StreamingHttpResponse | Response
 
     parsed_json = json.loads(request.body)
     print(json.dumps(parsed_json, indent=4, sort_keys=True))
+
+    # Detect if the request is a summary request i.e. having stream=false and max_tokens=1000
+    if (
+        parsed_json.get("stream", True) is False
+        and parsed_json.get("max_tokens", 0) == 1000
+    ):
+        del parsed_json["stream"]
+        parsed_json["model"] = SUMMARY_MODEL
+        completion = real_client.chat.completions.create(**parsed_json, stream=False)
+        return Response(data=completion)
 
     # Return a streaming response
     return StreamingHttpResponse(

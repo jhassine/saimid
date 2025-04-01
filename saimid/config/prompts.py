@@ -2,26 +2,38 @@
 
 REDACTION_SUMMARY = "# REDACTION SUMMARY"
 
+NO_ID_DATA = "No identifiable data detected."
+
 REDACTION_SUMMARY_INSTRUCTIONS = f"""
 {REDACTION_SUMMARY}
 
-| Key | Id |
-|-----|----|
-| REDACTED PERSON 1 NAME | real person 1 name |
-| REDACTED PERSON 1 EMAIL | real person 1 email |
-| REDACTED ORGANIZATION 1 NAME | real organization 1 name |
+| Token                                  | Value          |
+|----------------------------------------|----------------|
+| REDACTED PERSON [id] [data type]       | real data here |
+| REDACTED ORGANIZATION [id] [data type] | real data here |
 
 ---
+
+If there was no content to de-identify, return "{NO_ID_DATA}" instead of the table.
+
 """
 
-DEID_INSTRUCTIONS = f"""
-Your task is to return the user provided content as de-identied/pseudonymized.
+DEID_HEADER = "# DE-IDENTIFIED CONTENT"
 
-The de-identification shall include, but not limited to, the following data types:
+QUOTE = "> "
+
+DEID_INSTRUCTIONS = f"""Your are a de-identifier.
+
+Your task is to return the user provided text as de-identified and replace
+the identifiers with tokens.
+
+The de-identification shall include the following data categories:
+
 - Names
+- Ages
+- Dates of birth
 - Email addresses
 - Addresses
-- Date of birth
 - Zip codes
 - Phone numbers
 - Social security numbers
@@ -34,17 +46,19 @@ The de-identification shall include, but not limited to, the following data type
 - IP addresses
 - Organization names
 
-Replace these types of content with appropriate placeholders in this way:
-***<REDACTED PERSON 1 NAME>***
-***<REDACTED PERSON 1 EMAIL>***
-***<REDACTED ORGANIZATION 1 NAME>***
+Replace these types of data with appropriate tokens in this format:
+***<REDACTED PERSON [ID] [DATA CATEGORY]>***
+***<REDACTED ORGANIZATION [ID] [DATA CATEGORY]>***
 
+, where the `[ID]` is a unique identifier (number) of the entity owning it
+and the `[DATA CATEGORY]` indicates the category of information being redacted.
 
-Provide the answer in this markdown format:
+If the content does not have any content to be de-identified, return the text as it is without any alterations.
+But provide the answer always in this markdown format:
 
-# DE-IDENTIFIED CONTENT
+{DEID_HEADER}
 
-> de-identified content here
+{QUOTE}de-identified content (or original content, if nothing to be de-identified) here
 
 {REDACTION_SUMMARY_INSTRUCTIONS}
 
@@ -53,30 +67,23 @@ Provide the answer in this markdown format:
 """
 
 
-REID_INSTRUCTIONS = """Your task is to return the user provided content as re-identified by using the following (if any):
-"""
+def reid_instructions(tokens: str) -> str:
+    instructions = f"""Your task is to re-identify the content based on the provided tokens.
 
-GUARDRAIL_CHECK = """
+    If you see in the user provided text a token used, replace it with the value according to the TOKEN MAPPING.
 
-Your task is to evaluate the provided content and check if it contains any of the following data types.
+    If the text is already in identified form, do not replace.
 
-# DATA TYPE SUMMARY
+    TOKEN MAPPING:
+    {tokens}
 
-| Data Type | Contains (✓/✗) |
-|-----|----|
-| Personal data | ✓/✗ |
-| Data concerning health | ✓/✗ |
-| Business sensitive data | ✓/✗ |
-| Data concerning national security | ✓/✗ |
-| Data concerning financial information | ✓/✗ |
-| Data concerning sensitive data | ✓/✗ |
-| Data concerning children | ✓/✗ |
-| Data concerning sexual orientation | ✓/✗ |
-| Data concerning political opinions | ✓/✗ |
-| Data concerning religious beliefs | ✓/✗ |
-| Data concerning biometric data | ✓/✗ |
-| Data concerning genetic data | ✓/✗ |
-| Data concerning sexual life | ✓/✗ |
-| Data concerning location data | ✓/✗ |
+    If the TOKEN MAPPING has "{NO_ID_DATA}", return the content as it is without any alterations.
+    """
+    print(instructions)
+    return instructions
 
+
+USER_RESPONSE_PROMPT = """
+Your task is to respond to the user question in the same language user asked.
+If you encounter a redacted word, and refer to it in your answer, provide a response using the same redacted word.
 """
