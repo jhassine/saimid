@@ -1,5 +1,8 @@
 """Prompt templates."""
 
+from saimid.api.admin import Prompt
+from saimid.api.models import PromptLabelChoices
+
 REDACTION_SUMMARY = "# REDACTION SUMMARY"
 
 NO_ID_DATA = "No identifiable data detected."
@@ -61,29 +64,45 @@ But provide the answer always in this markdown format:
 {QUOTE}de-identified content (or original content, if nothing to be de-identified) here
 
 {REDACTION_SUMMARY_INSTRUCTIONS}
-
----
-
 """
 
 
 def reid_instructions(tokens: str) -> str:
-    instructions = f"""Your task is to re-identify the content based on the provided tokens.
-
-    If you see in the user provided text a token used, replace it with the value according to the TOKEN MAPPING.
-
-    If the text is already in identified form, do not replace.
-
-    TOKEN MAPPING:
-    {tokens}
-
-    If the TOKEN MAPPING has "{NO_ID_DATA}", return the content as it is without any alterations.
-    """
-    print(instructions)
-    return instructions
+    """Return re-id prompt."""
+    return (
+        "Your task is to re-identify the content based on the provided tokens.\n"
+        "If you see in the user provided text a token used, replace it with the value according to the TOKEN MAPPING.\n"
+        "If the text is already in identified form, do not replace.\n"
+        "\n"
+        f"If the TOKEN MAPPING has '{NO_ID_DATA}', return the content as it is without any alterations.\n"
+        "\n"
+        "TOKEN MAPPING:\n"
+        f"{tokens}"
+    )
 
 
 USER_RESPONSE_PROMPT = """
 Your task is to respond to the user question in the same language user asked.
 If you encounter a redacted word, and refer to it in your answer, provide a response using the same redacted word.
 """
+
+
+def get_deid_prompt() -> str:
+    """Get de-identification prompt."""
+    return (
+        Prompt.objects.get(purpose=PromptLabelChoices.DEID).prompt or DEID_INSTRUCTIONS
+    )
+
+
+def get_reid_prompt(tokens: str) -> str:
+    """Get re-identification prompt."""
+    if prompt := Prompt.objects.get(purpose=PromptLabelChoices.REID).prompt:
+        return f"{prompt}\n{tokens}"
+    return reid_instructions(tokens)
+
+
+def get_user_response_system_prompt() -> str:
+    return (
+        Prompt.objects.get(purpose=PromptLabelChoices.RESPONSE).prompt
+        or USER_RESPONSE_PROMPT
+    )

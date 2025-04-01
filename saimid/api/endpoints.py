@@ -15,10 +15,10 @@ from openai import OpenAI
 
 from saimid.config.prompts import (
     DEID_HEADER,
-    DEID_INSTRUCTIONS,
     QUOTE,
     REDACTION_SUMMARY,
     USER_RESPONSE_PROMPT,
+    get_deid_prompt,
     reid_instructions,
 )
 
@@ -152,7 +152,7 @@ def pseudonymization_wrapper(
         data["messages"] = [
             {
                 "role": "system",
-                "content": DEID_INSTRUCTIONS,
+                "content": get_deid_prompt(),
             },
             {
                 "role": "user",

@@ -12,7 +12,10 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 
+import django_stubs_ext
 from dotenv import load_dotenv
+
+django_stubs_ext.monkeypatch()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR: Path = Path(__file__).resolve().parent.parent
@@ -42,16 +45,20 @@ INSTALLED_APPS: list[str] = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "simple_history",
+    "saimid.api",
 ]
 
 MIDDLEWARE: list[str] = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "simple_history.middleware.HistoryRequestMiddleware",
 ]
 
 ROOT_URLCONF = "saimid.config.urls"
@@ -81,7 +88,7 @@ WSGI_APPLICATION = "saimid.config.wsgi.application"
 DATABASES: dict[str, dict[str, str | Path]] = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": BASE_DIR.parent / "data/db.sqlite3",
     }
 }
 
@@ -126,3 +133,12 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STORAGES: dict[str, dict[str, str]] = {
+    # ...
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
